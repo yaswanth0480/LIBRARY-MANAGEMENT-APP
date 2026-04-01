@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Library Manager</title>
+   <style>
+    body {
+    font-family: 'Segoe UI', sans-serif;
+    padding: 20px;
+    line-height: 1.6;
+    margin: 0;
+
+    /* 📚 Library-style background */
+    background: 
+        linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
+        url('https://images.unsplash.com/photo-1512820790803-83ca734da794');
+
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+
+    color: #fff;
+    }
+
+    h2 {
+        text-align: center;
+        font-size: 35px;
+        color: rgb(9, 220, 231);
+        margin-bottom: 25px;
+    }
+
+    input {
+        width: 100%;
+        max-width: 400px;
+        padding: 10px;
+        margin: 8px 0;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        outline: none;
+        display: block;
+        transition: 0.3s;
+        align-items: center;
+    }
+
+    input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 6px rgba(102,126,234,0.5);
+    }
+
+    button {
+        cursor: pointer;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        transition: 0.3s;
+    }
+
+    #fresh {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        margin-top: 10px;
+    }
+
+    #fresh:hover {
+        transform: scale(1.05);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    #new {
+        background: linear-gradient(135deg, #ff4d4d, #cc0000);
+        color: white;
+    }
+
+    #new:hover {
+        background: #a80000;
+    }
+
+    .book-card {
+    border: none;
+    padding: 12px;
+    margin: 12px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 10px;
+
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    transition: 0.3s;
+    }
+
+    .book-card:hover {
+        transform: translateY(-4px);
+    }
+    .container {
+    background: rgba(255,255,255,0.95);
+    padding: 20px;
+    border-radius: 15px;
+    max-width: 450px;
+    margin: auto;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    color: #333;
+    }
+</style>
+</head>
+
+<body>
+    <h2>📚 Library Manager (FastAPI + MongoDB)</h2>
+
+    TITLE   <input type="text" id="t" placeholder="Book Title"><br>
+    AUTHOR  <input type="text" id="a" placeholder="Author"><br>
+    PAGES   <input type="number" id="n" placeholder="pages count"><br>
+
+    <button id="fresh" onclick="saveToMongo()">Save to Database</button>
+    <div id="display"></div>
+
+    <script>
+        const API_URL = 'http://127.0.0.1:8000'; // Added port 8000
+
+        async function saveToMongo() {
+            const title = document.getElementById('t').value;
+            const author = document.getElementById('a').value;
+            const pages = document.getElementById('n').value;
+
+            if(!title || !author || !pages) return alert("Please fill both fields");
+
+            const bookData = { title, author,pages };
+
+            try {
+                await fetch(`${API_URL}/add-book`, { // Added specific path
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(bookData)
+                });
+                document.getElementById('t').value = '';
+                document.getElementById('a').value = '';
+                document.getElementById('n').value = '';
+                loadList();
+            } catch (err) {
+                console.error("Failed to save:", err);
+            }
+        }
+
+        async function loadList() {
+            try {
+                const res = await fetch(`${API_URL}/list-books`); // Added specific path
+                const data = await res.json();
+                document.getElementById('display').innerHTML = 
+                    data.map(b => `
+                        <div class="book-card">
+                            <span>📖 <b>${b.title}</b> by ${b.author} with ${b.pages}</span>
+                            <button  id="new" onclick="deleteBook('${b._id}')">Delete</button>
+                        </div>
+                    `).join('');
+            } catch (err) {
+                console.error("Failed to load:", err);
+            }
+        }
+
+        async function deleteBook(id) {
+            await fetch(`${API_URL}/delete-book/${id}`, { method: 'DELETE' });
+            loadList();
+        }
+
+        loadList(); // Load books on page start
+    </script>
+</body>
+</html>
